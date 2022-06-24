@@ -5,6 +5,6 @@
 	left: 0;
 	right: 0;
 	margin: auto;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
 }

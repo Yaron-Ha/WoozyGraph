@@ -2,6 +2,21 @@
 # yarn lockfile v1
 
 
+"@types/dat.gui@^0.7.7":
+  version "0.7.7"
+  resolved "https://registry.yarnpkg.com/@types/dat.gui/-/dat.gui-0.7.7.tgz#2125aedfaa190364c5a50b0447858a7e159aea2e"
+  integrity sha512-CxLCme0He5Jk3uQwfO/fGZMyNhb/ypANzqX0yU9lviBQMlen5SOvQTBQ/Cd9x5mFlUAK5Tk8RgvTyLj1nYkz+w==
+
+"@types/stats.js@^0.17.0":
+  version "0.17.0"
+  resolved "https://registry.yarnpkg.com/@types/stats.js/-/stats.js-0.17.0.tgz#0ed81d48e03b590c24da85540c1d952077a9fe20"
+  integrity sha512-9w+a7bR8PeB0dCT/HBULU2fMqf6BAzvKbxFboYhmDtDkKPiyXYbjoe2auwsXlEFI7CFNMF1dCv3dFH5Poy9R1w==
+
+dat.gui@^0.7.9:
+  version "0.7.9"
+  resolved "https://registry.yarnpkg.com/dat.gui/-/dat.gui-0.7.9.tgz#860cab06053b028e327820eabdf25a13cf07b17e"
+  integrity sha512-sCNc1OHobc+Erc1HqiswYgHdVNpSJUlk/Hz8vzOCsER7rl+oF/4+v8GXFUyCgtXpoCX6+bnmg07DedLvBLwYKQ==
+
 esbuild-android-64@0.14.47:
   version "0.14.47"
   resolved "https://registry.yarnpkg.com/esbuild-android-64/-/esbuild-android-64-0.14.47.tgz#ef95b42c67bcf4268c869153fa3ad1466c4cea6b"
@@ -196,6 +211,11 @@ source-map-js@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/source-map-js/-/source-map-js-1.0.2.tgz#adbc361d9c62df380125e7f161f71c826f1e490c"
   integrity sha512-R0XvVJ9WusLiqTCEiGCmICCMplcCkIwwR11mOSD9CR5u+IXYdiseeEuXCVAjS54zqwkLcPNnmU4OeJ6tUrWhDw==
+
+stats.js@^0.17.0:
+  version "0.17.0"
+  resolved "https://registry.yarnpkg.com/stats.js/-/stats.js-0.17.0.tgz#b1c3dc46d94498b578b7fd3985b81ace7131cc7d"
+  integrity sha512-hNKz8phvYLPEcRkeG1rsGmV5ChMjKDAWU7/OJJdDErPBNChQXxCo3WZurGpnWc6gZhAzEPFad1aVgyOANH1sMw==
 
 supports-preserve-symlinks-flag@^1.0.0:
   version "1.0.0"
