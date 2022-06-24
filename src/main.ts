@@ -46,6 +46,7 @@ simuFolder.add(gs, 'seperateFunctions').onFinishChange(state => {
 	initWebGL()
 })
 shadeFunction = simuFolder.add(gs, 'shadeFunction').onFinishChange(initWebGL)
+shadeFunction // typescript complains if I don't use this, thus this no-op
 rgbFunctions = simuFolder.addFolder('RGB functions')
 ;['red', 'green', 'blue'].forEach(color => rgbFunctions.add(gs, `${color}Function`).onFinishChange(initWebGL))
 rgbFunctions.hide()
