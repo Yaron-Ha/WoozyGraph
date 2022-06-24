@@ -1,13 +1,9 @@
 // -- IMPORTS --
 import './style.css'
 import { FRAME_PER_SIMU } from './consts'
+import frag from './frag.glsl?raw'
+import vert from './vert.glsl?raw'
 
-<<<<<<< Updated upstream
-// -- RENDERING --
-// canvas objects
-const canvas = document.getElementById('the-canvas') as HTMLCanvasElement
-const ctx = canvas.getContext('2d')!
-=======
 import * as twgl from 'twgl.js'
 import { GUI, GUIController } from 'dat.gui'
 import Stats from 'stats.js'
@@ -63,15 +59,9 @@ const gl = canvas.getContext('webgl2', { antialias: false })!
 // a lateinit variable holding the size of the block, and changed uniformally every frame
 let blockSizeLocation!: WebGLUniformLocation
 let resolutionLocation!: WebGLUniformLocation
->>>>>>> Stashed changes
 
 // the last time a frame was rendered, used for timing
 let last = 0
-<<<<<<< Updated upstream
-let isPaused = false
-
-=======
->>>>>>> Stashed changes
 const gameTick = () => {
 	// see if enough time passed to call a simulation tick
 	stats.begin()
@@ -106,29 +96,17 @@ const renderTick = () => {
 	// the cell counter helps put the image pixels in the right place
 	let cellCounter = 0
 	// for each column
-<<<<<<< Updated upstream
-	const drawWidth = ctx.canvas.width + blockWidth
-	const drawnHeight = ctx.canvas.height + blockWidth
-	for (let y = 0; y < drawnHeight; y += blockWidth) {
-=======
 	for (let y = 0; y < drawnHeight + 1; y += blockWidth) {
 		// +1 because otherwise it's missing a line
->>>>>>> Stashed changes
 		// for each row in that column
-		for (let x = 0; x < drawWidth; x += blockWidth) {
+		for (let x = 0; x < drawnWidth; x += blockWidth) {
 			// modify each pixel
-<<<<<<< Updated upstream
-			const woozy = () => ~~(((1 + Math.sin(x*y)))/2 * 255)
-			ctx.fillStyle = `rgba(${woozy()}, ${woozy()}, ${woozy()}, 1)`
-			ctx.fillRect(x, y, blockWidth, -blockWidth)
-=======
 			// const woozy = () => ~~(((1 + Math.sin(x*y)))/2 * 255)
 			// ctx.fillStyle = `rgba(${woozy()}, ${woozy()}, ${woozy()}, 1)`
 			// ctx.fillRect(x, y, blockWidth, -blockWidth)
 			imageBuffer[cellCounter] = x
 			imageBuffer[cellCounter + 1] = y
 			cellCounter += 2
->>>>>>> Stashed changes
 		}
 	}
 	gl.bufferData(gl.ARRAY_BUFFER, imageBuffer, gl.STATIC_DRAW)
@@ -141,12 +119,9 @@ const resize = () => {
 	// make the canvas fit to screen
 	canvas.width = window.innerWidth
 	canvas.height = window.innerHeight
-<<<<<<< Updated upstream
-=======
 	// reset the WebGL state
 	// set the viewport
 	gl.viewport(0, 0, canvas.width, canvas.height)
->>>>>>> Stashed changes
 }
 
 window.onresize = resize
@@ -197,9 +172,5 @@ document.body.appendChild(stats.dom)
 
 // -- INITS --
 resize() // initial resize
-<<<<<<< Updated upstream
-requestAnimationFrame(gameTick)
-=======
 initWebGL() // WebGL setup
 requestAnimationFrame(gameTick)
->>>>>>> Stashed changes
