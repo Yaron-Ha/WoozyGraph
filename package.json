@@ -10,8 +10,6 @@
   "devDependencies": {
     "typescript": "^4.5.4",
     "vite": "^2.9.9"
-<<<<<<< Updated upstream
-=======
   },
   "dependencies": {
     "@types/dat.gui": "^0.7.7",
@@ -19,6 +17,5 @@
     "dat.gui": "^0.7.9",
     "stats.js": "^0.17.0",
     "twgl.js": "^4.23.1"
->>>>>>> Stashed changes
   }
 }
