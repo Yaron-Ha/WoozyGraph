@@ -79,6 +79,7 @@ gui.add(
 			gs.redFunction = randomShader()
 			gs.blueFunction = randomShader()
 			gs.greenFunction = randomShader()
+			initWebGL()
 		}
 	},
 	'fn'
