@@ -1,39 +1,42 @@
 // -- IMPORTS --
 import './style.css'
 import { FRAME_PER_SIMU } from './consts'
+import { randomShader } from './utils'
 import frag from './frag.glsl?raw'
 import vert from './vert.glsl?raw'
 
 import * as twgl from 'twgl.js'
-import { GUI, GUIController } from 'dat.gui'
+import { GUI } from 'dat.gui'
 import Stats from 'stats.js'
 
 // -- GUI SETUP --
-const gui = new GUI()
-gui.name = 'Test'
+const gui = new GUI({ width: 350 })
+
 // simulation game state that the GUI changes.
 // must be inside an object because it must be changed by reference.
 const gs = {
 	isPaused: false,
-	blockWidth: 5,
+	blockWidth: 5.42,
 	zoom: 2,
 	animationState: 'forward',
 	animationSpeed: 3,
 	seperateFunctions: false,
-	shadeFunction: 'x * y',
-	redFunction: 'x * y',
-	greenFunction: 'x * y',
-	blueFunction: 'x * y'
+	shadeFunction: 'x * y * n',
+	redFunction: 'x * y * n',
+	greenFunction: 'x * y * n',
+	blueFunction: 'x * y * n',
+	slider: 5
 }
 
+// setup sliders and options
 const simuFolder = gui.addFolder('Simulation')
 simuFolder.open()
-simuFolder.add(gs, 'blockWidth', 4, 7).step(0.0001).listen()
-simuFolder.add(gs, 'zoom', 1, 10).listen()
-simuFolder.add(gs, 'animationState', ['forward', 'backwards'])
-simuFolder.add(gs, 'animationSpeed', 1, 20).step(1)
-let shadeFunction!: GUIController, rgbFunctions!: GUI
-simuFolder.add(gs, 'seperateFunctions').onFinishChange(state => {
+simuFolder.add(gs, 'blockWidth', 4, 7).step(0.0001).name('Block width').listen()
+simuFolder.add(gs, 'zoom', 1, 10).name('Zoom').listen()
+let rgbFunctions!: GUI
+simuFolder.add(gs, 'animationState', ['forward', 'backwards']).name('Simulation type')
+simuFolder.add(gs, 'animationSpeed', 1, 20).name('Simulation speed').step(1)
+const updateFolder = (state: boolean) => {
 	if (state) {
 		// seperate functions are now enabled, hide the general shade function and show the category
 		// TODO: actually hide it
@@ -44,22 +47,52 @@ simuFolder.add(gs, 'seperateFunctions').onFinishChange(state => {
 		// seperate functions are now disabled, show the general shade function and hide the category
 	}
 	initWebGL()
-})
-shadeFunction = simuFolder.add(gs, 'shadeFunction').onFinishChange(initWebGL)
-shadeFunction // typescript complains if I don't use this, thus this no-op
+}
+simuFolder
+	.add(gs, 'seperateFunctions')
+	.onFinishChange(updateFolder)
+	.name('Seperate RGB functions')
+	.listen()
+simuFolder.add(gs, 'shadeFunction').name('General function').onFinishChange(initWebGL).listen()
 rgbFunctions = simuFolder.addFolder('RGB functions')
-;['red', 'green', 'blue'].forEach(color => rgbFunctions.add(gs, `${color}Function`).onFinishChange(initWebGL))
+;['red', 'green', 'blue'].forEach(color =>
+	rgbFunctions
+		.add(gs, `${color}Function`)
+		.name(`${color.replace(/^\w/, c => c.toUpperCase())} function`) // capitalize the first letter
+		.onFinishChange(initWebGL)
+		.listen()
+)
+
 rgbFunctions.hide()
-gui.add(gs, 'isPaused')
+gui.add(gs, 'isPaused').name('Animation paused')
+gui.add(gs, 'slider', 0, 10).step(0.0001).name('Animation slider (n)').listen()
+gui.add(
+	{
+		fn: () => {
+			// give all properties a random number
+			const rnd = (min: number, max: number) => Math.random() * (max - min) + min
+			gs.blockWidth = rnd(4.5, 7)
+			gs.seperateFunctions = Math.random() < 0.5
+			updateFolder(gs.seperateFunctions)
+			// also select random functions
+			gs.shadeFunction = randomShader()
+			gs.redFunction = randomShader()
+			gs.blueFunction = randomShader()
+			gs.greenFunction = randomShader()
+		}
+	},
+	'fn'
+).name('Randomize')
 
 // -- RENDERING --
 // canvas objects
 const canvas = document.getElementById('the-canvas') as HTMLCanvasElement
 const gl = canvas.getContext('webgl2', { antialias: false })!
 
-// a lateinit variable holding the size of the block, and changed uniformally every frame
+// lateinit variables holding the size of the block, resolution and slider state
 let blockSizeLocation!: WebGLUniformLocation
 let resolutionLocation!: WebGLUniformLocation
+let sliderLocation!: WebGLUniformLocation
 
 // the last time a frame was rendered, used for timing
 let last = 0
@@ -80,9 +113,11 @@ const gameTick = () => {
 
 // calls `FPS` times every second.
 const renderTick = () => {
+	const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max)
 	// first apply animation
-	const delta = gs.animationSpeed * 0.000001
-	gs.blockWidth += gs.animationState == 'forward' ? delta : -delta
+	const scale = gs.animationSpeed * 0.000001
+	const delta = gs.animationState == 'forward' ? scale : -scale
+	gs.slider = clamp(gs.slider + delta, 0, 10)
 	// block width is copied from the object. That is for two reasons:
 	// 1) conciseness, no `gs.` prefix needed.
 	// 2) speed: accessing an object is slow, better do it once
@@ -93,6 +128,9 @@ const renderTick = () => {
 	gl.uniform1f(blockSizeLocation, blockWidth)
 	// give the current resolution
 	gl.uniform2f(resolutionLocation, drawnWidth, drawnHeight)
+	// give the current state of the slider
+	gl.uniform1f(sliderLocation, gs.slider)
+
 	const imageBuffer = new Float32Array(drawnWidth * drawnHeight)
 	// the cell counter helps put the image pixels in the right place
 	let cellCounter = 0
@@ -102,9 +140,6 @@ const renderTick = () => {
 		// for each row in that column
 		for (let x = 0; x < drawnWidth; x += blockWidth) {
 			// modify each pixel
-			// const woozy = () => ~~(((1 + Math.sin(x*y)))/2 * 255)
-			// ctx.fillStyle = `rgba(${woozy()}, ${woozy()}, ${woozy()}, 1)`
-			// ctx.fillRect(x, y, blockWidth, -blockWidth)
 			imageBuffer[cellCounter] = x
 			imageBuffer[cellCounter + 1] = y
 			cellCounter += 2
@@ -127,10 +162,11 @@ const resize = () => {
 
 window.onresize = resize
 
+// -- HELPER FUNCTIONS --
 // a helper function that initiates the WebGL instance. Called at start and after every
 function initWebGL() {
 	// setup program
-	// apply the the function given by the user
+	// apply the the function given by the user using preprocessing
 	let updatedFrag
 	// user has enabled different functions for each color base
 	if (gs.seperateFunctions) {
@@ -150,6 +186,8 @@ function initWebGL() {
 	// setup uniforms
 	resolutionLocation = gl.getUniformLocation(program, 'u_resolution')!
 	blockSizeLocation = gl.getUniformLocation(program, 'u_blockSize')!
+	sliderLocation = gl.getUniformLocation(program, 'u_slider')!
+
 	// setup attributes
 	// it's more concise to make this into a function of it's own. I'm sure TWGL
 	// has a version of this too but the docs are lacking and I can't find it
@@ -174,4 +212,4 @@ document.body.appendChild(stats.dom)
 // -- INITS --
 resize() // initial resize
 initWebGL() // WebGL setup
-requestAnimationFrame(gameTick)
+requestAnimationFrame(gameTick) // run first tick
