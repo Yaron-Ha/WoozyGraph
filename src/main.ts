@@ -1,3 +1,5 @@
+// TODO: give more meaningful error messages than console errors
+
 // -- IMPORTS --
 import './style.css'
 import { FRAME_PER_SIMU } from './consts'
@@ -9,12 +11,9 @@ import * as twgl from 'twgl.js'
 import { GUI } from 'dat.gui'
 import Stats from 'stats.js'
 
-// -- GUI SETUP --
-const gui = new GUI({ width: 350 })
-
 // simulation game state that the GUI changes.
 // must be inside an object because it must be changed by reference.
-const gs = {
+let gs = {
 	isPaused: false,
 	blockWidth: 5.42,
 	zoom: 2,
@@ -28,6 +27,16 @@ const gs = {
 	slider: 5
 }
 
+// first things first, we need to check if the window contains a hash. If that is the case,
+// it means that this page was opened using a link with a serialized `gs` object.
+// so let's unserialize it!
+if (window.location.hash !== '') {
+	const hash = window.location.hash.substring(1)
+	gs = JSON.parse(atob(hash))
+}
+
+// -- GUI SETUP --
+const gui = new GUI({ width: 350 })
 // setup sliders and options
 const simuFolder = gui.addFolder('Simulation')
 simuFolder.open()
@@ -48,11 +57,7 @@ const updateFolder = (state: boolean) => {
 	}
 	initWebGL()
 }
-simuFolder
-	.add(gs, 'seperateFunctions')
-	.onFinishChange(updateFolder)
-	.name('Seperate RGB functions')
-	.listen()
+simuFolder.add(gs, 'seperateFunctions').onFinishChange(updateFolder).name('Seperate RGB functions').listen()
 simuFolder.add(gs, 'shadeFunction').name('General function').onFinishChange(initWebGL).listen()
 rgbFunctions = simuFolder.addFolder('RGB functions')
 ;['red', 'green', 'blue'].forEach(color =>
@@ -66,24 +71,19 @@ rgbFunctions = simuFolder.addFolder('RGB functions')
 rgbFunctions.hide()
 gui.add(gs, 'isPaused').name('Animation paused')
 gui.add(gs, 'slider', 0, 10).step(0.0001).name('Animation slider (n)').listen()
-gui.add(
-	{
-		fn: () => {
-			// give all properties a random number
-			const rnd = (min: number, max: number) => Math.random() * (max - min) + min
-			gs.blockWidth = rnd(4.5, 7)
-			gs.seperateFunctions = Math.random() < 0.5
-			updateFolder(gs.seperateFunctions)
-			// also select random functions
-			gs.shadeFunction = randomShader()
-			gs.redFunction = randomShader()
-			gs.blueFunction = randomShader()
-			gs.greenFunction = randomShader()
-			initWebGL()
-		}
-	},
-	'fn'
-).name('Randomize')
+gui.add({ fn: randomize }, 'fn').name('Randomize button (alternatively press space)')
+const share = () => {
+	// creates a link to the current build and copies it.
+	// serialize into JSON and then base64
+	const serialized = btoa(JSON.stringify(gs))
+	const loc = window.location
+	// I'm not using window.location.href because if the page was opened with a link,
+	// the hash would appear there
+	const link = loc.origin + loc.pathname + '#' + serialized
+	navigator.clipboard.writeText(link)
+	alert('Link was successfully created and copied into your clipboard!')
+}
+gui.add({ fn: share }, 'fn').name('Found or created a cool build? Click to share it')
 
 // -- RENDERING --
 // canvas objects
@@ -163,6 +163,14 @@ const resize = () => {
 
 window.onresize = resize
 
+const onkeydown = (keyEvent: KeyboardEvent) => {
+	if (keyEvent.code == 'Space') {
+		// randomize on space key
+		randomize()
+	}
+}
+window.onkeydown = onkeydown
+
 // -- HELPER FUNCTIONS --
 // a helper function that initiates the WebGL instance. Called at start and after every
 function initWebGL() {
@@ -209,6 +217,21 @@ function initWebGL() {
 // a useful display for FPS and stuff
 const stats = new Stats()
 document.body.appendChild(stats.dom)
+
+// a randomizer
+function randomize() {
+	// give all properties a random number
+	const rnd = (min: number, max: number) => Math.random() * (max - min) + min
+	gs.blockWidth = rnd(4.5, 7)
+	gs.seperateFunctions = Math.random() < 0.5
+	updateFolder(gs.seperateFunctions)
+	// also select random functions
+	gs.shadeFunction = randomShader()
+	gs.redFunction = randomShader()
+	gs.blueFunction = randomShader()
+	gs.greenFunction = randomShader()
+	initWebGL()
+}
 
 // -- INITS --
 resize() // initial resize
