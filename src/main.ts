@@ -71,7 +71,7 @@ rgbFunctions = simuFolder.addFolder('RGB functions')
 rgbFunctions.hide()
 gui.add(gs, 'isPaused').name('Animation paused')
 gui.add(gs, 'slider', 0, 10).step(0.0001).name('Animation slider (n)').listen()
-gui.add({ fn: randomize }, 'fn').name('Randomize button (alternatively press space)')
+gui.add({ fn: randomize }, 'fn').name('Randomize button (or press <strong>tab</strong>)')
 const share = () => {
 	// creates a link to the current build and copies it.
 	// serialize into JSON and then base64
@@ -164,7 +164,7 @@ const resize = () => {
 window.onresize = resize
 
 const onkeydown = (keyEvent: KeyboardEvent) => {
-	if (keyEvent.code == 'Space') {
+	if (keyEvent.code == 'Tab') {
 		// randomize on space key
 		randomize()
 	}
