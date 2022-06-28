@@ -75,15 +75,31 @@ simuFolder.add(gs, 'slider', 0, 15).step(0.0001).name('Animation slider (n)').li
 
 const otherFolder = gui.addFolder('Other settings')
 otherFolder.open()
-otherFolder.add(localGs, 'isPaused').name('Animation paused')
-otherFolder.add(localGs, 'maxRandDepth', 0, 30).step(1).name('Max rand function depth = <strong style="color: red">lag</strong>')
+otherFolder.add(localGs, 'isPaused').name('Pause')
+otherFolder
+	.add(localGs, 'maxRandDepth', 0, 30)
+	.step(1)
+	.name('Max rand function depth = <strong style="color: red">lag</strong>')
 gui.add({ fn: randomize }, 'fn').name(
 	'Randomize button (alternatively <strong style="color: red">left click canvas</strong>)'
 )
+
 const share = () => {
 	// creates a link to the current build and copies it.
 	// serialize into JSON and then base64
-	const serialized = btoa(JSON.stringify(gs))
+	// it's okay to opt out of type checking for this, it's the most concise way
+	// and I'm not going to use the value of gsCopy in my code anymore
+	const gsCopy: any = { ...gs }
+	if (gs.seperateFunctions) {
+		// seperate functions? Remove the regular function, we don't need it in the link.
+		delete gsCopy.shadeFunction
+	} else {
+		delete gsCopy.redFunction
+		delete gsCopy.greenFunction
+		delete gsCopy.blueFunction
+	}
+
+	const serialized = btoa(JSON.stringify(gsCopy))
 	const loc = window.location
 	// I'm not using window.location.href because if the page was opened with a link,
 	// the hash would appear there
@@ -91,6 +107,7 @@ const share = () => {
 	navigator.clipboard.writeText(link)
 	alert('Link was successfully created and copied into your clipboard!')
 }
+
 gui.add({ fn: share }, 'fn').name('Found or created a cool build? Click to share it')
 
 // -- RENDERING --
