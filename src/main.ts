@@ -1,4 +1,9 @@
-// TODO: give more meaningful error messages than console errors
+/* 
+	TODO:
+	give more meaningful error messages than console errors
+	fix firefox
+		 
+*/
 
 // -- IMPORTS --
 import './style.css'
@@ -11,10 +16,8 @@ import * as twgl from 'twgl.js'
 import { GUI } from 'dat.gui'
 import Stats from 'stats.js'
 
-// simulation game state that the GUI changes.
-// must be inside an object because it must be changed by reference.
+// simulation game state
 let gs = {
-	isPaused: false,
 	blockWidth: 5.42,
 	zoom: 2,
 	animationState: 'forward',
@@ -27,24 +30,24 @@ let gs = {
 	slider: 5
 }
 
-// first things first, we need to check if the window contains a hash. If that is the case,
-// it means that this page was opened using a link with a serialized `gs` object.
-// so let's unserialize it!
-if (window.location.hash !== '') {
-	const hash = window.location.hash.substring(1)
-	gs = JSON.parse(atob(hash))
+// game state that is local to the computer and doesn't affect the simulation.
+let localGs = {
+	isPaused: false,
+	maxRandDepth: 5
 }
 
 // -- GUI SETUP --
-const gui = new GUI({ width: 350 })
-// setup sliders and options
-const simuFolder = gui.addFolder('Simulation')
+const gui = new GUI({ width: 400 })
+
+// setup sliders and options. Almost all are set to listen since they can be updated externally
+// the simulation folder contains all data that is essential for running this particular simulation
+const simuFolder = gui.addFolder('Simulation settings')
 simuFolder.open()
 simuFolder.add(gs, 'blockWidth', 4, 7).step(0.0001).name('Block width').listen()
 simuFolder.add(gs, 'zoom', 1, 10).name('Zoom').listen()
 let rgbFunctions!: GUI
-simuFolder.add(gs, 'animationState', ['forward', 'backwards']).name('Simulation type')
-simuFolder.add(gs, 'animationSpeed', 1, 20).name('Simulation speed').step(1)
+simuFolder.add(gs, 'animationState', ['forward', 'backwards']).name('Animation direction')
+simuFolder.add(gs, 'animationSpeed', 1, 1000).name('Simulation speed').step(1)
 const updateFolder = (state: boolean) => {
 	if (state) {
 		// seperate functions are now enabled, hide the general shade function and show the category
@@ -67,11 +70,16 @@ rgbFunctions = simuFolder.addFolder('RGB functions')
 		.onFinishChange(initWebGL)
 		.listen()
 )
+rgbFunctions.hide() // hidden by default
+simuFolder.add(gs, 'slider', 0, 15).step(0.0001).name('Animation slider (n)').listen()
 
-rgbFunctions.hide()
-gui.add(gs, 'isPaused').name('Animation paused')
-gui.add(gs, 'slider', 0, 10).step(0.0001).name('Animation slider (n)').listen()
-gui.add({ fn: randomize }, 'fn').name('Randomize button (or press <strong>tab</strong>)')
+const otherFolder = gui.addFolder('Other settings')
+otherFolder.open()
+otherFolder.add(localGs, 'isPaused').name('Animation paused')
+otherFolder.add(localGs, 'maxRandDepth', 0, 30).step(1).name('Max rand function depth = <strong style="color: red">lag</strong>')
+gui.add({ fn: randomize }, 'fn').name(
+	'Randomize button (alternatively <strong style="color: red">left click canvas</strong>)'
+)
 const share = () => {
 	// creates a link to the current build and copies it.
 	// serialize into JSON and then base64
@@ -102,7 +110,7 @@ const gameTick = () => {
 	stats.begin()
 	const now = Date.now()
 	const elapsed = now - last
-	if (elapsed > FRAME_PER_SIMU && !gs.isPaused) {
+	if (elapsed > FRAME_PER_SIMU && !localGs.isPaused) {
 		last = now
 		// now render it
 		renderTick()
@@ -118,7 +126,7 @@ const renderTick = () => {
 	// first apply animation
 	const scale = gs.animationSpeed * 0.000001
 	const delta = gs.animationState == 'forward' ? scale : -scale
-	gs.slider = clamp(gs.slider + delta, 0, 10)
+	gs.slider = clamp(gs.slider + delta, 0, 15)
 	// block width is copied from the object. That is for two reasons:
 	// 1) conciseness, no `gs.` prefix needed.
 	// 2) speed: accessing an object is slow, better do it once
@@ -163,13 +171,25 @@ const resize = () => {
 
 window.onresize = resize
 
-const onkeydown = (keyEvent: KeyboardEvent) => {
-	if (keyEvent.code == 'Tab') {
-		// randomize on space key
-		randomize()
-	}
+// randomize on left click. If the user presses right click, then the last game state will
+// be loaded. This is helpful if someone misclicked or they pressed too fast to notice a cool pattern!
+const oldStates: typeof gs[] = []
+canvas.onclick = (_: MouseEvent) => {
+	// backup GS
+	oldStates.push({ ...gs }) // "deep"-copy GS when pushing
+	randomize()
 }
-window.onkeydown = onkeydown
+// on right click, restore
+canvas.oncontextmenu = (ev: MouseEvent) => {
+	if (oldStates.length > 0) {
+		// there are old states, restore them. I'm using `Object.assign` instead of
+		// simply making `gs` equal `oldStates.pop()` because doing so bugs out the GUI listeners
+		Object.assign(gs, oldStates.pop()!)
+		initWebGL()
+	}
+	// disable the annoying pop up that shows up on right click
+	ev.preventDefault()
+}
 
 // -- HELPER FUNCTIONS --
 // a helper function that initiates the WebGL instance. Called at start and after every
@@ -226,11 +246,21 @@ function randomize() {
 	gs.seperateFunctions = Math.random() < 0.5
 	updateFolder(gs.seperateFunctions)
 	// also select random functions
-	gs.shadeFunction = randomShader()
-	gs.redFunction = randomShader()
-	gs.blueFunction = randomShader()
-	gs.greenFunction = randomShader()
+	gs.shadeFunction = randomShader(localGs.maxRandDepth)
+	gs.redFunction = randomShader(localGs.maxRandDepth)
+	gs.blueFunction = randomShader(localGs.maxRandDepth)
+	gs.greenFunction = randomShader(localGs.maxRandDepth)
 	initWebGL()
+}
+
+// we need to check if the window contains a hash. If that is the case,
+// it means that this page was opened using a link with a serialized `gs` object.
+// so let's unserialize it, and override the default `gs`.
+if (window.location.hash !== '') {
+	const hash = window.location.hash.substring(1)
+	gs = JSON.parse(atob(hash))
+	// update the folder to show up if `gs.seperateFunctions` is now true
+	updateFolder(gs.seperateFunctions)
 }
 
 // -- INITS --
