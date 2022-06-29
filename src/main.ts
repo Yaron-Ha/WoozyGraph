@@ -8,7 +8,7 @@
 // -- IMPORTS --
 import './style.css'
 import { FRAME_PER_SIMU } from './consts'
-import { randomShader } from './utils'
+import { randomShader, share } from './utils'
 import frag from './frag.glsl?raw'
 import vert from './vert.glsl?raw'
 
@@ -17,7 +17,7 @@ import { GUI } from 'dat.gui'
 import Stats from 'stats.js'
 
 // simulation game state
-let gs = {
+export let gs = {
 	blockWidth: 5.42,
 	zoom: 2,
 	animationState: 'forward',
@@ -84,30 +84,6 @@ gui.add({ fn: randomize }, 'fn').name(
 	'Randomize button (alternatively <strong style="color: red">left click canvas</strong>)'
 )
 
-const share = () => {
-	// creates a link to the current build and copies it.
-	// serialize into JSON and then base64
-	// it's okay to opt out of type checking for this, it's the most concise way
-	// and I'm not going to use the value of gsCopy in my code anymore
-	const gsCopy: any = { ...gs }
-	if (gs.seperateFunctions) {
-		// seperate functions? Remove the regular function, we don't need it in the link.
-		delete gsCopy.shadeFunction
-	} else {
-		delete gsCopy.redFunction
-		delete gsCopy.greenFunction
-		delete gsCopy.blueFunction
-	}
-
-	const serialized = btoa(JSON.stringify(gsCopy))
-	const loc = window.location
-	// I'm not using window.location.href because if the page was opened with a link,
-	// the hash would appear there
-	const link = loc.origin + loc.pathname + '#' + serialized
-	navigator.clipboard.writeText(link)
-	alert('Link was successfully created and copied into your clipboard!')
-}
-
 gui.add({ fn: share }, 'fn').name('Found or created a cool build? Click to share it')
 
 // -- RENDERING --
@@ -156,13 +132,13 @@ const renderTick = () => {
 	gl.uniform2f(resolutionLocation, drawnWidth, drawnHeight)
 	// give the current state of the slider
 	gl.uniform1f(sliderLocation, gs.slider)
-
-	const imageBuffer = new Float32Array(drawnWidth * drawnHeight)
+	// the size of the canvas that the image is projected on, assuming one point is one pixel
+	const projectionSize = (drawnWidth * drawnHeight) / blockWidth
+	const imageBuffer = new Float32Array(projectionSize)
 	// the cell counter helps put the image pixels in the right place
 	let cellCounter = 0
 	// for each column
-	for (let y = 0; y < drawnHeight + 1; y += blockWidth) {
-		// +1 because otherwise it's missing a line
+	for (let y = 0; y < drawnHeight; y += blockWidth) {
 		// for each row in that column
 		for (let x = 0; x < drawnWidth; x += blockWidth) {
 			// modify each pixel
@@ -171,8 +147,11 @@ const renderTick = () => {
 			cellCounter += 2
 		}
 	}
+
 	gl.bufferData(gl.ARRAY_BUFFER, imageBuffer, gl.STATIC_DRAW)
-	gl.drawArrays(gl.POINTS, 0, drawnWidth * drawnHeight)
+	// when passing the projection size, divide it by two. That's because a vec2 is passed
+	// rather than a regular float
+	gl.drawArrays(gl.POINTS, 0, projectionSize / 2)
 }
 
 // -- EVENTS --
@@ -227,27 +206,21 @@ function initWebGL() {
 			.replace('GREEN_FUNCTION', gs.shadeFunction)
 			.replace('BLUE_FUNCTION', gs.shadeFunction)
 	}
+
+	// setup program
 	const program = twgl.createProgram(gl, [vert, updatedFrag])
 	gl.useProgram(program)
 	// setup uniforms
 	resolutionLocation = gl.getUniformLocation(program, 'u_resolution')!
 	blockSizeLocation = gl.getUniformLocation(program, 'u_blockSize')!
 	sliderLocation = gl.getUniformLocation(program, 'u_slider')!
-
 	// setup attributes
-	// it's more concise to make this into a function of it's own. I'm sure TWGL
-	// has a version of this too but the docs are lacking and I can't find it
-	const makeBuffer = (location: string, size: number) => {
-		const attribLocation = gl.getAttribLocation(program, location)
-		const attribBuffer = gl.createBuffer()
-		gl.bindBuffer(gl.ARRAY_BUFFER, attribBuffer)
-		gl.enableVertexAttribArray(attribLocation)
-		gl.vertexAttribPointer(attribLocation, size, gl.FLOAT, false, 0, 0)
-	}
+	const positionLocation = gl.getAttribLocation(program, 'a_position')
+	const pointBuffer = gl.createBuffer()
+	gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer)
+	gl.enableVertexAttribArray(positionLocation)
 	// set the location attribute, which is a 2D vector of the x and y coord of the point
-	makeBuffer('a_position', 2)
-	// set the point size attribute, which changes the size of the point to be drawn
-	// makeBuffer('a_pointSize', 1)
+	gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
 	gl.deleteProgram(program)
 }
 
