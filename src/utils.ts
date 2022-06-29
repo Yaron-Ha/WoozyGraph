@@ -9,7 +9,7 @@ export function randomShader(maxDepth: number): string {
 	const operators = ['+', '-', '*', '/'] // two parameter operators
 	const functions1 = ['sin', 'cos', 'tan', 'abs',
 						'ceil', 'round', 'log', 'sqrt',
-						'asin', 'acos', 'atan', 'sinh', 
+						// 'asin', 'acos', 'atan', 'sinh', // removed because they always appear black
 						'cosh', 'tanh', 'inversesqrt', 'radians']
 	const functions2 = ['pow', 'min', 'max']
 

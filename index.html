@@ -1,18 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta property="og:title" content="WoozyGraphs" />
-    <meta property="og:description" content="Woozy patterns and more" />
-    <meta property="og:site_name" content="YaronHa" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://i.imgur.com/bYELrZf.png" />
-    <link rel="icon" type="image/png" href="favicon.png" />
-    <title>WoozyGraphs</title>
-  </head>
-  <body>
-    <script type="module" src="/src/main.ts" defer></script>
-    <canvas id="the-canvas">Your browser doesn't support canvas. When did you install your browser?</canvas>
-  </body>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta property="og:title" content="WoozyGraphs" />
+		<meta property="og:description" content="Woozy patterns and more" />
+		<meta property="og:site_name" content="YaronHa" />
+		<meta property="og:type" content="website" />
+		<meta property="og:image" content="https://i.imgur.com/bYELrZf.png" />
+		<link rel="icon" type="image/png" href="favicon.png" />
+		<title>WoozyGraphs</title>
+	</head>
+	<body>
+		<script type="module" src="/src/main.ts" defer></script>
+    <div id="canvas-container"> <!-- used to make the canvas opaque when the warning below is not dismissed -->
+      <canvas id="the-canvas">Your browser doesn't support canvas. When did you install your browser?</canvas>
+    </div>	
+		<div id="flash-warning" style="visibility: hidden">
+			<h1 id="flash-title">Flashing imagery warning</h1>
+			<p id="flash-description">
+        Hey, this game may contain flashing imagery,<br>depending on the shader supplied and the simulation speed.<br>
+        If you suffer from <strong class="highlight">Photosensitive Epilepsy</strong> please<br>
+        refrain from playing this game, or at least keep<br>
+        it <span style="color: #e1e5ee">paused</span> at all time to prevent flashy animations.
+      </p>
+      <button id="close-warning">Okay, I'll be alright</button>
+		</div>
+	</body>
 </html>

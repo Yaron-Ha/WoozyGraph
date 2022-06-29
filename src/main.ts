@@ -1,7 +1,6 @@
 /* 
 	TODO:
 	give more meaningful error messages than console errors
-	fix firefox
 		 
 */
 
@@ -36,6 +35,9 @@ let localGs = {
 	maxRandDepth: 5
 }
 
+// add a warning for people with photosensitive epilepsy
+setupFlashWarning()
+
 // -- GUI SETUP --
 const gui = new GUI({ width: 400 })
 
@@ -44,7 +46,7 @@ const gui = new GUI({ width: 400 })
 const simuFolder = gui.addFolder('Simulation settings')
 simuFolder.open()
 simuFolder.add(gs, 'blockWidth', 4, 7).step(0.0001).name('Block width').listen()
-simuFolder.add(gs, 'zoom', 1, 10).name('Zoom').listen()
+simuFolder.add(gs, 'zoom', 1, 10).name('Zoom = <strong style="color: red">lag</strong>').listen()
 let rgbFunctions!: GUI
 simuFolder.add(gs, 'animationState', ['forward', 'backwards']).name('Animation direction')
 simuFolder.add(gs, 'animationSpeed', 1, 1000).name('Simulation speed').step(1)
@@ -84,12 +86,12 @@ gui.add({ fn: randomize }, 'fn').name(
 	'Randomize button (alternatively <strong style="color: red">left click canvas</strong>)'
 )
 
-gui.add({ fn: share }, 'fn').name('Found or created a cool build? Click to share it')
+gui.add({ fn: share }, 'fn').name('Found or created a cool build? Click here to share it!')
 
 // -- RENDERING --
 // canvas objects
 const canvas = document.getElementById('the-canvas') as HTMLCanvasElement
-const gl = canvas.getContext('webgl2', { antialias: false })!
+const gl = canvas.getContext('webgl2', { antialias: false, alpha: false })!
 
 // lateinit variables holding the size of the block, resolution and slider state
 let blockSizeLocation!: WebGLUniformLocation
@@ -99,8 +101,9 @@ let sliderLocation!: WebGLUniformLocation
 // the last time a frame was rendered, used for timing
 let last = 0
 const gameTick = () => {
-	// see if enough time passed to call a simulation tick
+	// begin FPS measure
 	stats.begin()
+	// see if enough time passed to call a simulation tick
 	const now = Date.now()
 	const elapsed = now - last
 	if (elapsed > FRAME_PER_SIMU && !localGs.isPaused) {
@@ -108,6 +111,7 @@ const gameTick = () => {
 		// now render it
 		renderTick()
 	}
+	// end FPS measure
 	stats.end()
 	// end by rescheduling this function
 	requestAnimationFrame(gameTick)
@@ -243,12 +247,38 @@ function randomize() {
 	initWebGL()
 }
 
+function setupFlashWarning() {
+	// we first need to check if the user has confirmed they have no sensitivity to flashing imagery
+	let confirmedSafe = localStorage.confirmedSafe // null is falsy
+	const epilepsyButton = document.getElementById('close-warning') as HTMLButtonElement
+	const epilepsyWarning = document.getElementById('flash-warning') as HTMLDivElement
+	const canvasContainer = document.getElementById('canvas-container') as HTMLDivElement
+
+	if (!confirmedSafe) {
+		// expose the warning
+		epilepsyWarning.style.visibility = ''
+		canvasContainer.style.opacity = '0.05'
+		// it's not a big deal if I don't cancel this later, as it's only visible
+		// when the canvas has transparency
+		document.body.style.backgroundColor = '#000'
+	}
+
+	epilepsyButton.onclick = () => {
+		// on cilck, delete the warning and save the confirmation in localStorage
+		confirmedSafe = localStorage.confirmedSafe = true
+		epilepsyWarning.style.visibility = 'hidden'
+		// animate the closing effect
+		canvasContainer.style.transition = 'opacity 0.5s ease-in-out'
+		canvasContainer.style.opacity = '1'
+	}
+}
+
 // we need to check if the window contains a hash. If that is the case,
 // it means that this page was opened using a link with a serialized `gs` object.
-// so let's unserialize it, and override the default `gs`.
+// so let's unserialize it, and override the default `gs`
 if (window.location.hash !== '') {
 	const hash = window.location.hash.substring(1)
-	gs = JSON.parse(atob(hash))
+	Object.assign(gs, JSON.parse(atob(hash)))
 	// update the folder to show up if `gs.seperateFunctions` is now true
 	updateFolder(gs.seperateFunctions)
 }

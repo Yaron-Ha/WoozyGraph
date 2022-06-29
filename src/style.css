@@ -1,10 +1,74 @@
 #the-canvas {
+	/* positioning */
 	position: absolute;
 	top: 0;
 	bottom: 0;
 	left: 0;
 	right: 0;
 	margin: auto;
+	/* rendering */
 	image-rendering: pixelated;
 	image-rendering: crisp-edges;
+}
+
+#flash-warning {
+	/* rendering */
+	font-family: Consolas, monospace;
+	color: #f7c59f;
+	background-color: #767b91;
+	border-radius: 10px;
+	font-size: large;
+	/* spatial design */
+	padding: 0.5em;
+	text-align: center;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+}
+
+#flash-title {
+	/* rendering */
+	background-color: #2a324b;
+	/* spatial design */
+	padding: 0.5em;
+	margin-top: 0px;
+	margin-bottom: 0px;
+	border-radius: 10px;
+}
+
+#flash-description {
+	/* rendering */
+	font-size: larger;
+	line-height: 1.3;
+	/* spatial design */
+	padding: 0.5em;
+	margin: 0.7em;
+	border-radius: 10px;
+}
+
+.highlight {
+	/* rendering */
+	color: #e1e5ee;
+	text-decoration: underline;
+	text-decoration-thickness: 3px;
+}
+
+#close-warning {
+	/* rendering */
+	font-family: inherit;
+	font-size: larger;
+	font-weight: bold;
+	background-color: #e1e5ee;
+	border-color: transparent;
+	/* spatial design */
+	border-radius: 6px;
+	padding: 0.5em;
+	/* animation */
+	transition: background-color 0.2s ease-in-out;
+}
+
+#close-warning:hover {
+	/* rendering */
+	background-color: #c7ccdb;
 }
