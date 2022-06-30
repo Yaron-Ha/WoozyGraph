@@ -17,7 +17,7 @@ import Stats from 'stats.js'
 
 // simulation game state
 export let gs = {
-	blockWidth: 5.42,
+	blockWidth: 5.1327,
 	zoom: 2,
 	animationState: 'forward',
 	animationSpeed: 3,
