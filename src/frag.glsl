@@ -13,7 +13,7 @@ uniform float u_slider;
 void main() {
    /* 
       These defines make writing the function more concise. The reason I'm not using varibles
-      is because these values won't necessarily be used , so if I assign it to a variable,
+      is because these values won't necessarily be used, so if I assign it to a variable,
       it's possible that the compiler would think "hey, the program uses v_fragPosition (for example)
       because it's assigned to a variable" and keep that redundancy in the shader code.
       However #define's are compile time only, meaning that should the user not use v_fragPosition
@@ -30,11 +30,12 @@ void main() {
       is cyclic and thus very convenient for animations.
       Yes, I know preprocessing is a bad idea, but that's best way to
       include user functions (since they are code rather than variables
-      and cannot be passed in a `uniform`).
+      and cannot be passed in a `uniform`, not to mention they are set once per GL program).
     */ 
    float red = (1.0 + sin(RED_FUNCTION)) / 2.0;
    float green = (1.0 + sin(GREEN_FUNCTION)) / 2.0;
    float blue = (1.0 + sin(BLUE_FUNCTION)) / 2.0;
    vec3 v_color = vec3(red, green, blue);
+   // there's currently no function on the alpha channel, and I don't find a reason to add it
    outColor = vec4(v_color, 1.0);
 }

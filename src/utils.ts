@@ -1,4 +1,5 @@
-import { gs } from "./main"
+import { GUIController } from 'dat.gui'
+import { gs } from './main'
 
 // random array element
 const rndElem = <T>(array: T[]) => array[~~(Math.random() * array.length)]
@@ -7,10 +8,21 @@ export function randomShader(maxDepth: number): string {
 	// creates and returns a random shader function
 	const variables = ['x', 'y', 'n']
 	const operators = ['+', '-', '*', '/'] // two parameter operators
-	const functions1 = ['sin', 'cos', 'tan', 'abs',
-						'ceil', 'round', 'log', 'sqrt',
-						// 'asin', 'acos', 'atan', 'sinh', // removed because they always appear black
-						'cosh', 'tanh', 'inversesqrt', 'radians']
+	const functions1 = [
+		'sin',
+		'cos',
+		'tan',
+		'abs',
+		'ceil',
+		'round',
+		'log',
+		'sqrt',
+		// 'asin', 'acos', 'atan', 'sinh', // removed because they always appear black
+		'cosh',
+		'tanh',
+		'inversesqrt',
+		'radians'
+	]
 	const functions2 = ['pow', 'min', 'max']
 
 	const createExpression = (internal1?: string, internal2?: string) => {
@@ -22,7 +34,8 @@ export function randomShader(maxDepth: number): string {
 			// add a random number as a variable
 			const specificVars = [(Math.random() * 20).toFixed(3), ...variables]
 			const exprs = shuffleArray([internal1 ?? rndElem(specificVars), internal2 ?? rndElem(specificVars)])
-			if (Math.random() < 0.5) { // use operators?
+			if (Math.random() < 0.5) {
+				// use operators?
 				const operator = rndElem(operators)
 				// operators always get wrapped inside parenthesis to prevent messing with PEMDAS
 				return `(${exprs[0]} ${operator} ${exprs[1]})` // example: "(x - y)"
@@ -42,15 +55,15 @@ export function randomShader(maxDepth: number): string {
 
 	const createScope = (maxDepth: number, depth: number = 0, innerScope?: string): string => {
 		// creates a code scope and integrates various functions
-		// returns early if max recursion depth was reached, or the scope is already valid 
-		if (depth > maxDepth || Math.random() > maxDepth / 3 && innerScope) return innerScope!
+		// returns early if max recursion depth was reached, or the scope is already valid
+		if (depth > maxDepth || (Math.random() > maxDepth / 3 && innerScope)) return innerScope!
 		innerScope ??= createExpression()
 		const scope1 = createScope(maxDepth, depth + 1, innerScope)
 		const scope2 = createExpression()
 		return createExpression(scope1, scope2)
 	}
 
-    return createScope(maxDepth)
+	return createScope(maxDepth)
 }
 
 // taken from Laurens Holst's answer on StackOverflow
@@ -84,4 +97,9 @@ export function share() {
 	const link = loc.origin + loc.pathname + '#' + serialized
 	navigator.clipboard.writeText(link)
 	alert('Link was successfully created and copied into your clipboard!')
+}
+
+export function colorGuiItem(elem: GUIController, color: string) {
+	const container = (elem as any).__li as HTMLLIElement
+	container.style.borderLeftColor = color
 }

@@ -7,12 +7,12 @@
 // -- IMPORTS --
 import './style.css'
 import { FRAME_PER_SIMU } from './consts'
-import { randomShader, share } from './utils'
+import { colorGuiItem, randomShader, share } from './utils'
 import frag from './frag.glsl?raw'
 import vert from './vert.glsl?raw'
 
 import * as twgl from 'twgl.js'
-import { GUI } from 'dat.gui'
+import { GUI, GUIController } from 'dat.gui'
 import Stats from 'stats.js'
 
 // simulation game state
@@ -47,34 +47,46 @@ const simuFolder = gui.addFolder('Simulation settings')
 simuFolder.open()
 simuFolder.add(gs, 'blockWidth', 4, 7).step(0.0001).name('Block width').listen()
 simuFolder.add(gs, 'zoom', 1, 10).name('Zoom = <strong style="color: red">lag</strong>').listen()
-let rgbFunctions!: GUI
+let rgbFunctions!: GUI, generalFunction!: GUIController
 simuFolder.add(gs, 'animationState', ['forward', 'backwards']).name('Animation direction')
 simuFolder.add(gs, 'animationSpeed', 1, 1000).name('Simulation speed').step(1)
 const updateFolder = (state: boolean) => {
 	if (state) {
 		// seperate functions are now enabled, hide the general shade function and show the category
-		// TODO: actually hide it
 		rgbFunctions.show()
 		rgbFunctions.open()
+		// the `d.ts` file hides the __li property, but I can access it this way
+		const elem = (generalFunction as any).__li as HTMLLIElement
+		elem.style.display = 'none'
 	} else {
-		rgbFunctions.hide()
 		// seperate functions are now disabled, show the general shade function and hide the category
+		rgbFunctions.hide()
+		const elem = (generalFunction as any).__li as HTMLLIElement
+		elem.style.display = ''
 	}
 	initWebGL()
 }
 simuFolder.add(gs, 'seperateFunctions').onFinishChange(updateFolder).name('Seperate RGB functions').listen()
-simuFolder.add(gs, 'shadeFunction').name('General function').onFinishChange(initWebGL).listen()
+generalFunction = simuFolder
+	.add(gs, 'shadeFunction')
+	.name('Combined shading function')
+	.onFinishChange(initWebGL)
+	.listen()
 rgbFunctions = simuFolder.addFolder('RGB functions')
-;['red', 'green', 'blue'].forEach(color =>
-	rgbFunctions
+;['red', 'green', 'blue'].forEach(color => {
+	// add the RGB color function
+	const elem = rgbFunctions
 		.add(gs, `${color}Function`)
 		.name(`${color.replace(/^\w/, c => c.toUpperCase())} function`) // capitalize the first letter
 		.onFinishChange(initWebGL)
 		.listen()
-)
+	// make its color fit
+	colorGuiItem(elem, color)
+})
 rgbFunctions.hide() // hidden by default
 simuFolder.add(gs, 'slider', 0, 15).step(0.0001).name('Animation slider (n)').listen()
 
+// settings unessential to simulation
 const otherFolder = gui.addFolder('Other settings')
 otherFolder.open()
 otherFolder.add(localGs, 'isPaused').name('Pause')
@@ -82,16 +94,27 @@ otherFolder
 	.add(localGs, 'maxRandDepth', 0, 30)
 	.step(1)
 	.name('Max rand function depth = <strong style="color: red">lag</strong>')
+
+// Github and Discord links
+const linksFolder = gui.addFolder('Links')
+linksFolder.open()
+const createLink = (name: string, dest: string, color: string) => {
+	const link = linksFolder.add({ fn: () => window.open(dest) }, 'fn').name(name)
+	colorGuiItem(link, color)
+}
+createLink('Github — source code and FAQ', 'https://github.com/Yaron-Ha/WoozyGraph', '#f6f8fA')
+createLink('Discord — send builds and suggestions', 'https://discord.gg/hZCRuXmU2S', '#36393f')
+
 gui.add({ fn: randomize }, 'fn').name(
 	'Randomize button (alternatively <strong style="color: red">left click canvas</strong>)'
 )
-
-gui.add({ fn: share }, 'fn').name('Found or created a cool build? Click here to share it!')
+gui.add({ fn: share }, 'fn').name('Found or created a cool build? Click here to share its link')
+colorGuiItem(gui.add({ fn: () => snapshotCanvas(canvas) }, 'fn').name('Take a screenshot of the canvas'), '#bff2ff')
 
 // -- RENDERING --
 // canvas objects
 const canvas = document.getElementById('the-canvas') as HTMLCanvasElement
-const gl = canvas.getContext('webgl2', { antialias: false, alpha: false })!
+let gl = canvas.getContext('webgl2', { antialias: false, alpha: false, preserveDrawingBuffer: false })!
 
 // lateinit variables holding the size of the block, resolution and slider state
 let blockSizeLocation!: WebGLUniformLocation
@@ -228,10 +251,6 @@ function initWebGL() {
 	gl.deleteProgram(program)
 }
 
-// a useful display for FPS and stuff
-const stats = new Stats()
-document.body.appendChild(stats.dom)
-
 // a randomizer
 function randomize() {
 	// give all properties a random number
@@ -273,6 +292,33 @@ function setupFlashWarning() {
 	}
 }
 
+function snapshotCanvas(canvas: HTMLCanvasElement) {
+	// I usually don't mess with polyfills but this is pretty essential
+	if (!navigator.clipboard || !window.ClipboardItem) {
+		alert("Unable to take a screenshot: your browser doesn't support copying images to the clipboard! If you really want to take a screenshot, open WoozyGraph on Chrome.")
+		return
+	}
+	// copies the canvas state to the clipboard. TODO: copy it in its actual resolution
+	// copying WebGL canvases is incredibly annoying. I have to set `preserveDrawingBuffer` (slow!) to true
+	// or else I get an empty black canvas. Thankfully, I can swap it fast 
+	gl = canvas.getContext('webgl2', { antialias: false, alpha: false, preserveDrawingBuffer: true })!
+	// force a re-render
+	renderTick()
+	// copy the image
+	canvas.toBlob((blob: Blob | null) => {
+		// console.log()
+		navigator.clipboard.write([
+			new ClipboardItem({
+				// it really shouldn't be null
+				'image/png': blob!
+			})
+		])
+		alert('Screenshot successfully copied to clipboard!')
+		// restore old `gl` context
+		gl = canvas.getContext('webgl2', { antialias: false, alpha: false, preserveDrawingBuffer: false })!
+	})
+}
+
 // we need to check if the window contains a hash. If that is the case,
 // it means that this page was opened using a link with a serialized `gs` object.
 // so let's unserialize it, and override the default `gs`
@@ -282,6 +328,10 @@ if (window.location.hash !== '') {
 	// update the folder to show up if `gs.seperateFunctions` is now true
 	updateFolder(gs.seperateFunctions)
 }
+
+// a useful display for FPS and stuff
+const stats = new Stats()
+document.body.appendChild(stats.dom)
 
 // -- INITS --
 resize() // initial resize
