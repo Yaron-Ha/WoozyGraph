@@ -1,10 +1,6 @@
 # WoozyGraph
 
 ![Demo 1](readme-res/img1.png "Colorful random function 1: Curls")
-![Demo 2](readme-res/img2.png "Colorful random function 2: Sea")
-![Demo 3](readme-res/img3.png "Colorful random function 3: Flag")
-![Demo 5](readme-res/img5.png "Colorful random function 4: Mottled pillars")
-![Demo 4](readme-res/img4.png "The builtin demo function: x * y * n")
 
 ## What is this?
 WoozyGraph is a WebGL based simulation game for the creation and display of woozy patterns and graphs.
@@ -45,3 +41,9 @@ Download this repository, and make sure you have `yarn` installed.
 Open a terminal window in the repository's folder, then run `yarn` to install
 required packages, and then `yarn dev` for live debugging or `yarn build` to build this game into a static website.
 Make sure you read the license first, please.
+
+## Example screenshots
+![Demo 2](readme-res/img2.png "Colorful random function 2: Sea")
+![Demo 3](readme-res/img3.png "Colorful random function 3: Flag")
+![Demo 5](readme-res/img5.png "Colorful random function 4: Mottled pillars")
+![Demo 4](readme-res/img4.png "The builtin demo function: x * y * n")
